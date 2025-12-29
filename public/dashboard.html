@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoBank - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="logo">NeoBank</div>
+        <button id="logout-btn">Logout</button>
+    </nav>
+    <main>
+        <header>
+            <h2>Welcome, <span id="user-name">Admin</span></h2>
+            <div class="balance-card">
+                <h3>Total Balance</h3>
+                <p class="amount">$25,430.00</p>
+            </div>
+        </header>
+
+        <section class="actions">
+            <button id="transfer-btn">Transfer Funds</button>
+            <button id="statements-btn">View Statements</button>
+        </section>
+
+        <section class="transactions">
+            <h3>Recent Transactions</h3>
+            <ul id="transaction-list">
+                <li><span>Amazon</span> <span class="debit">-$120.50</span></li>
+                <li><span>Salary Deposit</span> <span class="credit">+$3,500.00</span></li>
+                <li><span>Starbucks</span> <span class="debit">-$5.40</span></li>
+            </ul>
+        </section>
+    </main>
+    <script>
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+
+</html>
