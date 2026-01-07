@@ -22,6 +22,12 @@ test.describe('Banking Domain Concept', () => {
         await expect(page.locator('.balance-card')).toBeVisible();
         await expect(page.locator('.amount')).toContainText('$25,430.00');
 
+    // Verify account number is shown and has expected format
+    const acct = page.locator('#account-number');
+    await expect(acct).toBeVisible();
+    // Expect format ACCT- followed by 8 digits
+    await expect(acct).toHaveText(/ACCT-\d{8}/);
+
         // Check transactions
         const transactions = page.locator('#transaction-list li');
         await expect(transactions).toHaveCount(3);
