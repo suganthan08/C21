@@ -6,3 +6,10 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+ 
+# Local env files
+.env
+
+# Allure outputs
+allure-results/
+allure-report/
