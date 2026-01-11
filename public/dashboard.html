@@ -28,6 +28,26 @@
             <button id="statements-btn">View Statements</button>
         </section>
 
+        <section class="banking-operations">
+            <h3>Banking Operations</h3>
+            <div class="operation-group">
+                <label for="deposit-amount">Deposit Amount:</label>
+                <input type="number" id="deposit-amount" placeholder="Enter amount" step="0.01" min="0">
+                <button id="deposit-btn">Deposit</button>
+                <span id="deposit-status"></span>
+            </div>
+            <div class="operation-group">
+                <label for="debit-amount">Debit Amount:</label>
+                <input type="number" id="debit-amount" placeholder="Enter amount" step="0.01" min="0">
+                <button id="debit-btn">Debit</button>
+                <span id="debit-status"></span>
+            </div>
+            <div class="operation-group">
+                <button id="check-balance-btn">Check Balance</button>
+                <span id="balance-display"></span>
+            </div>
+        </section>
+
         <section class="transactions">
             <h3>Recent Transactions</h3>
             <ul id="transaction-list">
@@ -38,9 +58,78 @@
         </section>
     </main>
     <script>
+        // Initialize balance from the DOM or with a default value
+        let currentBalance = parseFloat(document.querySelector('.amount').textContent.replace('$', '').replace(',', ''));
+
         document.getElementById('logout-btn').addEventListener('click', () => {
             window.location.href = 'index.html';
         });
+
+        // Deposit method
+        document.getElementById('deposit-btn').addEventListener('click', () => {
+            const amount = parseFloat(document.getElementById('deposit-amount').value);
+            const statusEl = document.getElementById('deposit-status');
+            
+            if (isNaN(amount) || amount <= 0) {
+                statusEl.textContent = 'Invalid amount';
+                statusEl.style.color = 'red';
+                return;
+            }
+            
+            currentBalance += amount;
+            updateBalance();
+            addTransaction(`Deposit`, `+$${amount.toFixed(2)}`, 'credit');
+            document.getElementById('deposit-amount').value = '';
+            statusEl.textContent = `Deposited $${amount.toFixed(2)}`;
+            statusEl.style.color = 'green';
+            setTimeout(() => statusEl.textContent = '', 3000);
+        });
+
+        // Debit method
+        document.getElementById('debit-btn').addEventListener('click', () => {
+            const amount = parseFloat(document.getElementById('debit-amount').value);
+            const statusEl = document.getElementById('debit-status');
+            
+            if (isNaN(amount) || amount <= 0) {
+                statusEl.textContent = 'Invalid amount';
+                statusEl.style.color = 'red';
+                return;
+            }
+            
+            if (amount > currentBalance) {
+                statusEl.textContent = 'Insufficient funds';
+                statusEl.style.color = 'red';
+                return;
+            }
+            
+            currentBalance -= amount;
+            updateBalance();
+            addTransaction(`Debit`, `-$${amount.toFixed(2)}`, 'debit');
+            document.getElementById('debit-amount').value = '';
+            statusEl.textContent = `Debited $${amount.toFixed(2)}`;
+            statusEl.style.color = 'green';
+            setTimeout(() => statusEl.textContent = '', 3000);
+        });
+
+        // Check balance method
+        document.getElementById('check-balance-btn').addEventListener('click', () => {
+            const balanceEl = document.getElementById('balance-display');
+            balanceEl.textContent = `Current Balance: $${currentBalance.toFixed(2)}`;
+            balanceEl.style.color = 'blue';
+        });
+
+        // Helper function to update balance in the header
+        function updateBalance() {
+            document.querySelector('.amount').textContent = `$${currentBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        // Helper function to add transaction to the list
+        function addTransaction(description, amount, type) {
+            const transactionList = document.getElementById('transaction-list');
+            const li = document.createElement('li');
+            li.innerHTML = `<span>${description}</span> <span class="${type}">${amount}</span>`;
+            transactionList.insertBefore(li, transactionList.firstChild);
+        }
     </script>
 </body>
 
