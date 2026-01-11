@@ -58,4 +58,112 @@ test.describe('Banking Domain Concept', () => {
         await expect(page).toHaveURL(/index.html/);
         await expect(page.locator('#login-form')).toBeVisible();
     });
+
+    test('Deposit operation', async ({ page }) => {
+        // Login
+        await page.goto('/');
+        await page.fill('#username', 'admin');
+        await page.fill('#password', 'password123');
+        await page.click('#login-btn');
+
+        // Get initial balance
+        const initialBalance = await page.locator('.amount').textContent();
+        console.log(`Initial balance: ${initialBalance}`);
+
+        // Perform deposit
+        const depositAmount = '500.00';
+        await page.fill('#deposit-amount', depositAmount);
+        await page.click('#deposit-btn');
+
+        // Verify deposit status message
+        await expect(page.locator('#deposit-status')).toContainText('Deposited');
+
+        // Verify balance increased
+        const balanceAfterDeposit = await page.locator('.amount').textContent();
+        expect(balanceAfterDeposit).not.toEqual(initialBalance);
+        console.log(`Balance after deposit: ${balanceAfterDeposit}`);
+
+        // Verify new transaction appears in list
+        const firstTransaction = page.locator('#transaction-list li').first();
+        await expect(firstTransaction).toContainText('Deposit');
+        await expect(firstTransaction).toContainText('+$500.00');
+    });
+
+    test('Check balance operation', async ({ page }) => {
+        // Login
+        await page.goto('/');
+        await page.fill('#username', 'admin');
+        await page.fill('#password', 'password123');
+        await page.click('#login-btn');
+
+        // Click check balance button
+        await page.click('#check-balance-btn');
+
+        // Verify balance is displayed
+        const balanceDisplay = page.locator('#balance-display');
+        await expect(balanceDisplay).toBeVisible();
+        await expect(balanceDisplay).toContainText('Current Balance:');
+        await expect(balanceDisplay).toContainText('$');
+    });
+
+    test('Debit operation with sufficient funds', async ({ page }) => {
+        // Login
+        await page.goto('/');
+        await page.fill('#username', 'admin');
+        await page.fill('#password', 'password123');
+        await page.click('#login-btn');
+
+        // Get initial balance
+        const initialBalance = await page.locator('.amount').textContent();
+        console.log(`Initial balance: ${initialBalance}`);
+
+        // Perform debit
+        const debitAmount = '100.50';
+        await page.fill('#debit-amount', debitAmount);
+        await page.click('#debit-btn');
+
+        // Verify debit status message
+        await expect(page.locator('#debit-status')).toContainText('Debited');
+
+        // Verify balance decreased
+        const balanceAfterDebit = await page.locator('.amount').textContent();
+        expect(balanceAfterDebit).not.toEqual(initialBalance);
+        console.log(`Balance after debit: ${balanceAfterDebit}`);
+
+        // Verify new transaction appears in list
+        const firstTransaction = page.locator('#transaction-list li').first();
+        await expect(firstTransaction).toContainText('Debit');
+        await expect(firstTransaction).toContainText('-$100.50');
+    });
+
+    test('Debit operation with insufficient funds', async ({ page }) => {
+        // Login
+        await page.goto('/');
+        await page.fill('#username', 'admin');
+        await page.fill('#password', 'password123');
+        await page.click('#login-btn');
+
+        // Attempt to debit a very large amount
+        const largeAmount = '999999.99';
+        await page.fill('#debit-amount', largeAmount);
+        await page.click('#debit-btn');
+
+        // Verify insufficient funds error
+        await expect(page.locator('#debit-status')).toContainText('Insufficient funds');
+    });
+
+    test('Invalid deposit amount', async ({ page }) => {
+        // Login
+        await page.goto('/');
+        await page.fill('#username', 'admin');
+        await page.fill('#password', 'password123');
+        await page.click('#login-btn');
+
+        // Attempt deposit with invalid amount (empty or negative)
+        await page.fill('#deposit-amount', '-50');
+        await page.click('#deposit-btn');
+
+        // Verify error message
+        await expect(page.locator('#deposit-status')).toContainText('Invalid amount');
+    });
 });
