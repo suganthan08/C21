@@ -54,6 +54,20 @@ npm run test:allure
 explorer .\allure-report
 ```
 
+## Playwright HTML report
+Playwright includes a built-in HTML reporter. The project is configured to write HTML reports when you run tests. Use the following scripts to run tests and open the Playwright HTML report:
+
+```powershell
+# Run tests and automatically open the Playwright HTML report
+npm run test:html
+
+# Run tests (results will be available under `playwright-report`) and open the report later
+npm run test
+npm run show-report
+```
+
+The Playwright report is stored in `playwright-report` by default. Use `npx playwright show-report` directly if needed.
+
 ## Notes
 - If `npx allure` is not found, ensure `allure-commandline` is installed locally (`node_modules/.bin/allure`) or install Allure CLI system-wide (e.g., via Scoop or Chocolatey on Windows) and add it to PATH.
 - If you prefer a different output folder, update `playwright.config.ts` reporter options.
