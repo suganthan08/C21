@@ -1,4 +1,20 @@
 import { test, expect } from '@playwright/test';
+import {
+    login,
+    logout,
+    getCurrentBalance,
+    deposit,
+    debit,
+    checkBalance,
+    getDepositError,
+    getDebitError,
+    getTransactionCount,
+    getFirstTransaction,
+    clearStatusMessages,
+    expectBalanceIncreasedBy,
+    expectBalanceDecreasedBy,
+    expectTransactionExists,
+} from './helpers/banking-helpers';
 
 test.describe('Banking Domain Concept', () => {
 
@@ -10,12 +26,7 @@ test.describe('Banking Domain Concept', () => {
         await expect(page).toHaveTitle(/NeoBank - Login/);
 
         // Perform login
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
-
-        // Verify redirection to dashboard
-        await expect(page).toHaveURL(/dashboard.html/);
+        await login(page, 'admin', 'password123');
         await expect(page.locator('h2')).toContainText('Welcome, Admin');
 
         // Check balance visibility
@@ -46,124 +57,88 @@ test.describe('Banking Domain Concept', () => {
 
     test('Logout flow', async ({ page }) => {
         // Login first
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Logout
-        await page.click('#logout-btn');
-
-        // Verify back to login
-        await expect(page).toHaveURL(/index.html/);
-        await expect(page.locator('#login-form')).toBeVisible();
+        await logout(page);
     });
 
     test('Deposit operation', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Get initial balance
-        const initialBalance = await page.locator('.amount').textContent();
-        console.log(`Initial balance: ${initialBalance}`);
+        const initialBalance = await getCurrentBalance(page);
+        console.log(`Initial balance: $${initialBalance}`);
 
         // Perform deposit
-        const depositAmount = '500.00';
-        await page.fill('#deposit-amount', depositAmount);
-        await page.click('#deposit-btn');
-
-        // Verify deposit status message
-        await expect(page.locator('#deposit-status')).toContainText('Deposited');
+        const depositAmount = 500.00;
+        const success = await deposit(page, depositAmount);
+        expect(success).toBe(true);
 
         // Verify balance increased
-        const balanceAfterDeposit = await page.locator('.amount').textContent();
-        expect(balanceAfterDeposit).not.toEqual(initialBalance);
-        console.log(`Balance after deposit: ${balanceAfterDeposit}`);
+        await expectBalanceIncreasedBy(page, initialBalance, depositAmount);
 
         // Verify new transaction appears in list
-        const firstTransaction = page.locator('#transaction-list li').first();
-        await expect(firstTransaction).toContainText('Deposit');
-        await expect(firstTransaction).toContainText('+$500.00');
+        await expectTransactionExists(page, 'Deposit', '+$500.00');
     });
 
     test('Check balance operation', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Click check balance button
-        await page.click('#check-balance-btn');
+        const balanceText = await checkBalance(page);
 
         // Verify balance is displayed
-        const balanceDisplay = page.locator('#balance-display');
-        await expect(balanceDisplay).toBeVisible();
-        await expect(balanceDisplay).toContainText('Current Balance:');
-        await expect(balanceDisplay).toContainText('$');
+        expect(balanceText).toContain('Current Balance:');
+        expect(balanceText).toContain('$');
     });
 
     test('Debit operation with sufficient funds', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Get initial balance
-        const initialBalance = await page.locator('.amount').textContent();
-        console.log(`Initial balance: ${initialBalance}`);
+        const initialBalance = await getCurrentBalance(page);
+        console.log(`Initial balance: $${initialBalance}`);
 
         // Perform debit
-        const debitAmount = '100.50';
-        await page.fill('#debit-amount', debitAmount);
-        await page.click('#debit-btn');
-
-        // Verify debit status message
-        await expect(page.locator('#debit-status')).toContainText('Debited');
+        const debitAmount = 100.50;
+        const success = await debit(page, debitAmount);
+        expect(success).toBe(true);
 
         // Verify balance decreased
-        const balanceAfterDebit = await page.locator('.amount').textContent();
-        expect(balanceAfterDebit).not.toEqual(initialBalance);
-        console.log(`Balance after debit: ${balanceAfterDebit}`);
+        await expectBalanceDecreasedBy(page, initialBalance, debitAmount);
 
         // Verify new transaction appears in list
-        const firstTransaction = page.locator('#transaction-list li').first();
-        await expect(firstTransaction).toContainText('Debit');
-        await expect(firstTransaction).toContainText('-$100.50');
+        await expectTransactionExists(page, 'Debit', '-$100.50');
     });
 
     test('Debit operation with insufficient funds', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Attempt to debit a very large amount
-        const largeAmount = '999999.99';
-        await page.fill('#debit-amount', largeAmount);
+        const largeAmount = 999999.99;
+        await page.fill('#debit-amount', largeAmount.toString());
         await page.click('#debit-btn');
 
         // Verify insufficient funds error
-        await expect(page.locator('#debit-status')).toContainText('Insufficient funds');
+        const error = await getDebitError(page);
+        expect(error).toContain('Insufficient funds');
     });
 
     test('Invalid deposit amount', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
-        // Attempt deposit with invalid amount (empty or negative)
+        // Attempt deposit with invalid amount (negative)
         await page.fill('#deposit-amount', '-50');
         await page.click('#deposit-btn');
 
         // Verify error message
-        await expect(page.locator('#deposit-status')).toContainText('Invalid amount');
+        const error = await getDepositError(page);
+        expect(error).toContain('Invalid amount');
     });
 });
