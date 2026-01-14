@@ -1,55 +1,55 @@
 import { test, expect } from '@playwright/test';
+import {
+    login,
+    getCurrentBalance,
+    deposit,
+    debit,
+    checkBalance,
+    getDepositError,
+    getDebitError,
+    getTransactionCount,
+    getFirstTransaction,
+    expectBalanceIncreasedBy,
+    expectBalanceDecreasedBy,
+    expectTransactionExists,
+    clearStatusMessages,
+} from './helpers/banking-helpers';
 
 test.describe('Banking Advanced Scenarios', () => {
 
     test('Multiple sequential deposits increase balance correctly', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Get initial balance
-        const initialText = await page.locator('.amount').textContent();
-        const initialBalance = parseFloat(initialText!.replace('$', '').replace(',', ''));
+        const initialBalance = await getCurrentBalance(page);
 
         // Perform multiple deposits
         const deposits = [100.50, 250.75, 75.25];
         let expectedBalance = initialBalance;
 
         for (const amount of deposits) {
-            await page.fill('#deposit-amount', amount.toString());
-            await page.click('#deposit-btn');
+            const success = await deposit(page, amount);
+            expect(success).toBe(true);
             expectedBalance += amount;
-
-            // Verify status message
-            const depositStatus = page.locator('#deposit-status');
-            await expect(depositStatus).toContainText('Deposited');
-
-            // Clear status for next iteration
-            await page.waitForTimeout(1000);
+            await clearStatusMessages(page);
         }
 
         // Verify final balance
-        const finalText = await page.locator('.amount').textContent();
-        const finalBalance = parseFloat(finalText!.replace('$', '').replace(',', ''));
+        const finalBalance = await getCurrentBalance(page);
         expect(finalBalance).toBeCloseTo(expectedBalance, 2);
 
         // Verify all transactions appear (initial 3 + 3 new deposits)
-        const transactions = page.locator('#transaction-list li');
-        await expect(transactions).toHaveCount(6);
+        const transactionCount = await getTransactionCount(page);
+        expect(transactionCount).toBe(6);
     });
 
     test('Multiple sequential debits decrease balance correctly', async ({ page }) => {
         // Login
-        await page.goto('/');
-        await page.fill('#username', 'admin');
-        await page.fill('#password', 'password123');
-        await page.click('#login-btn');
+        await login(page, 'admin', 'password123');
 
         // Get initial balance
-        const initialText = await page.locator('.amount').textContent();
-        const initialBalance = parseFloat(initialText!.replace('$', '').replace(',', ''));
+        const initialBalance = await getCurrentBalance(page);
 
         // Perform multiple debits
         const debits = [100.00, 50.25, 75.50];
@@ -57,28 +57,20 @@ test.describe('Banking Advanced Scenarios', () => {
 
         for (const amount of debits) {
             if (expectedBalance >= amount) {
-                await page.fill('#debit-amount', amount.toString());
-                await page.click('#debit-btn');
+                const success = await debit(page, amount);
+                expect(success).toBe(true);
                 expectedBalance -= amount;
-
-                // Verify status message
-                const debitStatus = page.locator('#debit-status');
-                await expect(debitStatus).toContainText('Debited');
-
-                // Clear status for next iteration
-                await page.waitForTimeout(1000);
+                await clearStatusMessages(page);
             }
         }
 
         // Verify final balance
-        const finalText = await page.locator('.amount').textContent();
-        const finalBalance = parseFloat(finalText!.replace('$', '').replace(',', ''));
+        const finalBalance = await getCurrentBalance(page);
         expect(finalBalance).toBeCloseTo(expectedBalance, 2);
 
         // Verify transactions were added
-        const transactions = page.locator('#transaction-list li');
-        const count = await transactions.count();
-        expect(count).toBeGreaterThan(3);
+        const transactionCount = await getTransactionCount(page);
+        expect(transactionCount).toBeGreaterThan(3);
     });
 
     test('Debit at exact balance boundary', async ({ page }) => {
