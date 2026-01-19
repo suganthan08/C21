@@ -48,6 +48,32 @@
             </div>
         </section>
 
+        <section class="beneficiaries">
+            <h3>Manage Beneficiaries</h3>
+            <div class="beneficiary-form">
+                <input type="text" id="beneficiary-name" placeholder="Beneficiary Name">
+                <input type="text" id="beneficiary-account" placeholder="Account Number">
+                <input type="text" id="beneficiary-bank" placeholder="Bank Name">
+                <button id="add-beneficiary-btn">Add Beneficiary</button>
+                <span id="beneficiary-status"></span>
+            </div>
+            <div class="beneficiary-list">
+                <h4>Saved Beneficiaries</h4>
+                <ul id="beneficiary-list">
+                    <li id="beneficiary-1">
+                        <span class="beneficiary-info">John Doe - Acct: 1234567890</span>
+                        <button class="edit-btn" data-id="1">Edit</button>
+                        <button class="delete-btn" data-id="1">Delete</button>
+                    </li>
+                    <li id="beneficiary-2">
+                        <span class="beneficiary-info">Jane Smith - Acct: 0987654321</span>
+                        <button class="edit-btn" data-id="2">Edit</button>
+                        <button class="delete-btn" data-id="2">Delete</button>
+                    </li>
+                </ul>
+            </div>
+        </section>
+
         <section class="transactions">
             <h3>Recent Transactions</h3>
             <ul id="transaction-list">
@@ -60,10 +86,111 @@
     <script>
         // Initialize balance from the DOM or with a default value
         let currentBalance = parseFloat(document.querySelector('.amount').textContent.replace('$', '').replace(',', ''));
+        let beneficiaryId = 3; // Counter for new beneficiaries
+        let beneficiaries = [
+            { id: 1, name: 'John Doe', account: '1234567890', bank: 'Bank A' },
+            { id: 2, name: 'Jane Smith', account: '0987654321', bank: 'Bank B' }
+        ];
 
         document.getElementById('logout-btn').addEventListener('click', () => {
             window.location.href = 'index.html';
         });
+
+        // CRUD Operations for Beneficiaries
+        // CREATE - Add new beneficiary
+        document.getElementById('add-beneficiary-btn').addEventListener('click', () => {
+            const name = document.getElementById('beneficiary-name').value.trim();
+            const account = document.getElementById('beneficiary-account').value.trim();
+            const bank = document.getElementById('beneficiary-bank').value.trim();
+            const statusEl = document.getElementById('beneficiary-status');
+
+            if (!name || !account || !bank) {
+                statusEl.textContent = 'All fields required';
+                statusEl.style.color = 'red';
+                return;
+            }
+
+            const newBeneficiary = {
+                id: beneficiaryId++,
+                name: name,
+                account: account,
+                bank: bank
+            };
+            beneficiaries.push(newBeneficiary);
+            addBeneficiaryToList(newBeneficiary);
+
+            document.getElementById('beneficiary-name').value = '';
+            document.getElementById('beneficiary-account').value = '';
+            document.getElementById('beneficiary-bank').value = '';
+            statusEl.textContent = 'Beneficiary added successfully';
+            statusEl.style.color = 'green';
+            setTimeout(() => statusEl.textContent = '', 3000);
+        });
+
+        // READ - Display beneficiaries (already done in HTML)
+        function addBeneficiaryToList(beneficiary) {
+            const list = document.getElementById('beneficiary-list');
+            const li = document.createElement('li');
+            li.id = `beneficiary-${beneficiary.id}`;
+            li.innerHTML = `
+                <span class="beneficiary-info">${beneficiary.name} - Acct: ${beneficiary.account} (${beneficiary.bank})</span>
+                <button class="edit-btn" data-id="${beneficiary.id}">Edit</button>
+                <button class="delete-btn" data-id="${beneficiary.id}">Delete</button>
+            `;
+            list.appendChild(li);
+            attachBeneficiaryListeners(beneficiary.id);
+        }
+
+        // UPDATE - Edit beneficiary
+        function attachBeneficiaryListeners(id) {
+            document.querySelector(`.edit-btn[data-id="${id}"]`).addEventListener('click', () => {
+                const beneficiary = beneficiaries.find(b => b.id === id);
+                if (!beneficiary) return;
+
+                const newName = prompt('Enter new name:', beneficiary.name);
+                if (newName === null) return;
+
+                const newAccount = prompt('Enter new account:', beneficiary.account);
+                if (newAccount === null) return;
+
+                const newBank = prompt('Enter new bank:', beneficiary.bank);
+                if (newBank === null) return;
+
+                // Update in array
+                beneficiary.name = newName;
+                beneficiary.account = newAccount;
+                beneficiary.bank = newBank;
+
+                // Update in DOM
+                const li = document.getElementById(`beneficiary-${id}`);
+                li.querySelector('.beneficiary-info').textContent = `${newName} - Acct: ${newAccount} (${newBank})`;
+
+                const statusEl = document.getElementById('beneficiary-status');
+                statusEl.textContent = 'Beneficiary updated successfully';
+                statusEl.style.color = 'green';
+                setTimeout(() => statusEl.textContent = '', 3000);
+            });
+
+            // DELETE - Remove beneficiary
+            document.querySelector(`.delete-btn[data-id="${id}"]`).addEventListener('click', () => {
+                if (confirm('Are you sure you want to delete this beneficiary?')) {
+                    // Remove from array
+                    beneficiaries = beneficiaries.filter(b => b.id !== id);
+
+                    // Remove from DOM
+                    const li = document.getElementById(`beneficiary-${id}`);
+                    li.remove();
+
+                    const statusEl = document.getElementById('beneficiary-status');
+                    statusEl.textContent = 'Beneficiary deleted successfully';
+                    statusEl.style.color = 'green';
+                    setTimeout(() => statusEl.textContent = '', 3000);
+                }
+            });
+        }
+
+        // Attach listeners to initial beneficiaries
+        beneficiaries.forEach(b => attachBeneficiaryListeners(b.id));
 
         // Deposit method
         document.getElementById('deposit-btn').addEventListener('click', () => {
