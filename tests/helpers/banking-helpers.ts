@@ -198,6 +198,146 @@ export async function expectTransactionExists(
  * Clear status messages after operation
  * @param page - Playwright page object
  */
+export async function clearBeneficiaryInput(page: Page): Promise<void> {
+    await page.fill('#beneficiary-name', '');
+    await page.fill('#beneficiary-account', '');
+    await page.fill('#beneficiary-bank', '');
+}
+
+/**
+ * CREATE - Add a new beneficiary
+ * @param page - Playwright page object
+ * @param name - Beneficiary name
+ * @param account - Beneficiary account number
+ * @param bank - Beneficiary bank name
+ * @returns True if successful, false otherwise
+ */
+export async function createBeneficiary(
+    page: Page,
+    name: string,
+    account: string,
+    bank: string
+): Promise<boolean> {
+    await page.fill('#beneficiary-name', name);
+    await page.fill('#beneficiary-account', account);
+    await page.fill('#beneficiary-bank', bank);
+    await page.click('#add-beneficiary-btn');
+
+    const statusEl = page.locator('#beneficiary-status');
+    const statusText = await statusEl.textContent();
+
+    return statusText?.includes('added successfully') ?? false;
+}
+
+/**
+ * READ - Get all beneficiaries from the list
+ * @param page - Playwright page object
+ * @returns Array of beneficiary info strings
+ */
+export async function readBeneficiaries(page: Page): Promise<string[]> {
+    const beneficiaryElements = page.locator('#beneficiary-list li');
+    const count = await beneficiaryElements.count();
+    const beneficiaries: string[] = [];
+
+    for (let i = 0; i < count; i++) {
+        const text = await beneficiaryElements.nth(i).locator('.beneficiary-info').textContent();
+        if (text) {
+            beneficiaries.push(text);
+        }
+    }
+
+    return beneficiaries;
+}
+
+/**
+ * READ - Get beneficiary count
+ * @param page - Playwright page object
+ * @returns Number of beneficiaries in the list
+ */
+export async function getBeneficiaryCount(page: Page): Promise<number> {
+    return await page.locator('#beneficiary-list li').count();
+}
+
+/**
+ * UPDATE - Edit a beneficiary
+ * @param page - Playwright page object
+ * @param beneficiaryId - ID of the beneficiary to edit
+ * @param newName - New name (set to existing name if not changing)
+ * @param newAccount - New account number (set to existing if not changing)
+ * @param newBank - New bank name (set to existing if not changing)
+ * @returns True if successful, false otherwise
+ */
+export async function updateBeneficiary(
+    page: Page,
+    beneficiaryId: number,
+    newName: string,
+    newAccount: string,
+    newBank: string
+): Promise<boolean> {
+    // Handle prompts - user needs to set up page.on('dialog') for this to work
+    let promptCount = 0;
+    page.on('dialog', async (dialog) => {
+        if (promptCount === 0) {
+            await dialog.accept(newName);
+        } else if (promptCount === 1) {
+            await dialog.accept(newAccount);
+        } else if (promptCount === 2) {
+            await dialog.accept(newBank);
+        }
+        promptCount++;
+    });
+
+    await page.click(`.edit-btn[data-id="${beneficiaryId}"]`);
+    await page.waitForTimeout(500); // Wait for dialogs to process
+
+    const statusEl = page.locator('#beneficiary-status');
+    const statusText = await statusEl.textContent();
+
+    return statusText?.includes('updated successfully') ?? false;
+}
+
+/**
+ * DELETE - Remove a beneficiary
+ * @param page - Playwright page object
+ * @param beneficiaryId - ID of the beneficiary to delete
+ * @returns True if successful, false otherwise
+ */
+export async function deleteBeneficiary(page: Page, beneficiaryId: number): Promise<boolean> {
+    // Setup dialog handler for confirmation
+    page.on('dialog', async (dialog) => {
+        await dialog.accept(); // Click OK on confirmation
+    });
+
+    await page.click(`.delete-btn[data-id="${beneficiaryId}"]`);
+    await page.waitForTimeout(500); // Wait for dialog to process
+
+    const statusEl = page.locator('#beneficiary-status');
+    const statusText = await statusEl.textContent();
+
+    return statusText?.includes('deleted successfully') ?? false;
+}
+
+/**
+ * Verify beneficiary exists in the list
+ * @param page - Playwright page object
+ * @param name - Beneficiary name to search for
+ * @returns True if beneficiary found, false otherwise
+ */
+export async function beneficiaryExists(page: Page, name: string): Promise<boolean> {
+    const beneficiaryElement = page.locator('#beneficiary-list li').filter({ hasText: name });
+    const count = await beneficiaryElement.count();
+    return count > 0;
+}
+
+/**
+ * Get beneficiary error/status message
+ * @param page - Playwright page object
+ * @returns Status message text
+ */
+export async function getBeneficiaryStatus(page: Page): Promise<string> {
+    return await page.locator('#beneficiary-status').textContent() ?? '';
+}
+
 export async function clearStatusMessages(page: Page): Promise<void> {
     await page.waitForTimeout(500);
     await clearDepositInput(page);
