@@ -190,8 +190,20 @@ export async function expectTransactionExists(
     description: string,
     amount: string
 ): Promise<void> {
-    const transaction = page.locator('#transaction-list li').filter({ hasText: description });
-    await expect(transaction).toContainText(amount);
+    // Find the first transaction with the exact description to avoid strict mode issues
+    const transactions = page.locator('#transaction-list li');
+    const count = await transactions.count();
+    
+    for (let i = 0; i < count; i++) {
+        const text = await transactions.nth(i).textContent();
+        if (text?.includes(description) && text?.includes(amount)) {
+            // Found the transaction, pass the test
+            return;
+        }
+    }
+    
+    // If we get here, transaction not found
+    throw new Error(`Transaction with '${description}' and '${amount}' not found`);
 }
 
 /**
