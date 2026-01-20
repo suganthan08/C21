@@ -79,8 +79,10 @@ test.describe('Banking Domain Concept', () => {
         // Verify balance increased
         await expectBalanceIncreasedBy(page, initialBalance, depositAmount);
 
-        // Verify new transaction appears in list
-        await expectTransactionExists(page, 'Deposit', '+$500.00');
+        // Verify new transaction appears as first in list (should be the newest)
+        const firstTransaction = await getFirstTransaction(page);
+        expect(firstTransaction).toContain('Deposit');
+        expect(firstTransaction).toContain('+$500.00');
     });
 
     test('Check balance operation', async ({ page }) => {
