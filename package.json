@@ -11,7 +11,7 @@
     "allure:serve": "npx allure serve allure-results"
   },
   "keywords": [],
-  "author": "",
+  "author": "Suganthan",
   "license": "ISC",
   "devDependencies": {
     "@faker-js/faker": "^8.4.1",
