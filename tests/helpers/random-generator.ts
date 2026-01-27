@@ -123,7 +123,7 @@ export class RandomGenerator {
    * @returns {string} Username like "john_doe_123"
    */
   static generateUsername(): string {
-    return faker.internet.username();
+    return faker.internet.userName();
   }
 
   /**
