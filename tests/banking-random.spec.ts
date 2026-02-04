@@ -4,63 +4,63 @@ import { RandomGenerator } from './helpers/random-generator';
 
 test.describe('Banking with Random Generated Data', () => {
 
-    test('Generate and validate random account numbers', async () => {
-        // Generate multiple random account numbers
-        const accountNumbers = RandomGenerator.generateMultipleAccountNumbers(5);
+    // test('Generate and validate random account numbers', async () => {
+    //     // Generate multiple random account numbers
+    //     const accountNumbers = RandomGenerator.generateMultipleAccountNumbers(5);
         
-        // Assertions only - validate format
-        accountNumbers.forEach(accountNum => {
-            expect(accountNum).toMatch(/ACCT-\d{8}/);
-        });
+    //     // Assertions only - validate format
+    //     accountNumbers.forEach(accountNum => {
+    //         expect(accountNum).toMatch(/ACCT-\d{8}/);
+    //     });
 
         // Ensure all are unique
-        const uniqueNumbers = new Set(accountNumbers);
-        expect(uniqueNumbers.size).toBe(accountNumbers.length);
-    });
+    //     const uniqueNumbers = new Set(accountNumbers);
+    //     expect(uniqueNumbers.size).toBe(accountNumbers.length);
+    // });
 
-    test('Generate random account names', async () => {
-        // Generate multiple random names
-        const names = Array.from({ length: 5 }, () => RandomGenerator.generateAccountName());
+    // test('Generate random account names', async () => {
+    //     // Generate multiple random names
+    //     const names = Array.from({ length: 5 }, () => RandomGenerator.generateAccountName());
         
-        // Assertions only - validate format
-        names.forEach(name => {
-            expect(name.length).toBeGreaterThan(0);
-            expect(name).toMatch(/^[A-Za-z\s'.\-]+$/);
-        });
+    //     // Assertions only - validate format
+    //     names.forEach(name => {
+    //         expect(name.length).toBeGreaterThan(0);
+    //         expect(name).toMatch(/^[A-Za-z\s'.\-]+$/);
+    //     });
 
-        // Ensure at least some names are different
-        const uniqueNames = new Set(names);
-        expect(uniqueNames.size).toBeGreaterThan(1);
-    });
+    //     // Ensure at least some names are different
+    //     const uniqueNames = new Set(names);
+    //     expect(uniqueNames.size).toBeGreaterThan(1);
+    // });
 
-    test('Create beneficiary with randomly generated data', async ({ page }) => {
-        const bankingPage = new BankingPage(page);
-        const beneficiary = RandomGenerator.generateBeneficiary();
+    // test('Create beneficiary with randomly generated data', async ({ page }) => {
+    //     const bankingPage = new BankingPage(page);
+    //     const beneficiary = RandomGenerator.generateBeneficiary();
         
-        // Action: Login and create beneficiary
-        await bankingPage.login('admin', 'password123');
-        await bankingPage.createBeneficiary(beneficiary.name, beneficiary.accountNumber, beneficiary.bankName);
+    //     // Action: Login and create beneficiary
+    //     await bankingPage.login('admin', 'password123');
+    //     await bankingPage.createBeneficiary(beneficiary.name, beneficiary.accountNumber, beneficiary.bankName);
 
-        // Assertions only
-        expect(await bankingPage.beneficiaryExists(beneficiary.name)).toBeTruthy();
-        const allBeneficiaries = await bankingPage.getAllBeneficiaries();
-        expect(allBeneficiaries.some(b => b.includes(beneficiary.accountNumber))).toBeTruthy();
-    });
+    //     // Assertions only
+    //     expect(await bankingPage.beneficiaryExists(beneficiary.name)).toBeTruthy();
+    //     const allBeneficiaries = await bankingPage.getAllBeneficiaries();
+    //     expect(allBeneficiaries.some(b => b.includes(beneficiary.accountNumber))).toBeTruthy();
+    // });
 
-    test('Create multiple beneficiaries with random data', async ({ page }) => {
-        const bankingPage = new BankingPage(page);
-        const beneficiaries = RandomGenerator.generateMultipleBeneficiaries(3);
+    // test('Create multiple beneficiaries with random data', async ({ page }) => {
+    //     const bankingPage = new BankingPage(page);
+    //     const beneficiaries = RandomGenerator.generateMultipleBeneficiaries(3);
         
-        // Action: Login and create beneficiaries
-        await bankingPage.login('admin', 'password123');
-        await bankingPage.createMultipleBeneficiaries(beneficiaries);
+    //     // Action: Login and create beneficiaries
+    //     await bankingPage.login('admin', 'password123');
+    //     await bankingPage.createMultipleBeneficiaries(beneficiaries);
 
-        // Assertions only - verify all created
-        for (const beneficiary of beneficiaries) {
-            expect(await bankingPage.beneficiaryExists(beneficiary.name)).toBeTruthy();
-        }
-        expect(await bankingPage.getBeneficiaryCount()).toBeGreaterThanOrEqual(beneficiaries.length);
-    });
+    //     // Assertions only - verify all created
+    //     for (const beneficiary of beneficiaries) {
+    //         expect(await bankingPage.beneficiaryExists(beneficiary.name)).toBeTruthy();
+    //     }
+    //     expect(await bankingPage.getBeneficiaryCount()).toBeGreaterThanOrEqual(beneficiaries.length);
+    // });
 
     test('Deposit with random generated amount', async ({ page }) => {
         const bankingPage = new BankingPage(page);

@@ -13,7 +13,7 @@ test.describe('Banking Domain Concept', () => {
         await expect(page).toHaveTitle(/NeoBank - Dashboard/);
         await expect(page.locator('h2')).toContainText('Welcome, Admin');
         expect(await bankingPage.isBalanceCardVisible()).toBeTruthy();
-        expect(await bankingPage.getBalanceDisplayText()).toContain('$25,430.00');
+        expect(await bankingPage.getBalanceDisplayText()).toContain('$25,430.00');    /// tester ,automation
         expect(await bankingPage.getAccountNumber()).toMatch(/ACCT-\d{8}/);
         expect(await bankingPage.getTransactionCount()).toBe(3);
     });
