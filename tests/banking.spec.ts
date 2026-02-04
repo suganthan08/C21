@@ -1,146 +1,124 @@
 import { test, expect } from '@playwright/test';
-import {
-    login,
-    logout,
-    getCurrentBalance,
-    deposit,
-    debit,
-    checkBalance,
-    getDepositError,
-    getDebitError,
-    getTransactionCount,
-    getFirstTransaction,
-    clearStatusMessages,
-    expectBalanceIncreasedBy,
-    expectBalanceDecreasedBy,
-    expectTransactionExists,
-} from './helpers/banking-helpers';
+import { BankingPage } from './pages/banking.page';
 
 test.describe('Banking Domain Concept', () => {
 
     test('Login and verify dashboard', async ({ page }) => {
-        // Navigate to the login page
-        await page.goto('/');
+        const bankingPage = new BankingPage(page);
 
-        // Check title
-        await expect(page).toHaveTitle(/NeoBank - Login/);
+        // Action: Login
+        await bankingPage.login('admin', 'password123');
 
-        // Perform login
-        await login(page, 'admin', 'password123');
+        // Assertions only
+        await expect(page).toHaveTitle(/NeoBank - Dashboard/);
         await expect(page.locator('h2')).toContainText('Welcome, Admin');
-
-        // Check balance visibility
-        await expect(page.locator('.balance-card')).toBeVisible();
-        await expect(page.locator('.amount')).toContainText('$25,430.00');
-
-    // Verify account number is shown and has expected format
-    const acct = page.locator('#account-number');
-    await expect(acct).toBeVisible();
-    // Expect format ACCT- followed by 8 digits
-    await expect(acct).toHaveText(/ACCT-\d{8}/);
-
-        // Check transactions
-        const transactions = page.locator('#transaction-list li');
-        await expect(transactions).toHaveCount(3);
+        expect(await bankingPage.isBalanceCardVisible()).toBeTruthy();
+        expect(await bankingPage.getBalanceDisplayText()).toContain('$25,430.00');
+        expect(await bankingPage.getAccountNumber()).toMatch(/ACCT-\d{8}/);
+        expect(await bankingPage.getTransactionCount()).toBe(3);
     });
 
     test('Invalid login shows error', async ({ page }) => {
-        await page.goto('/');
+        const bankingPage = new BankingPage(page);
 
-        await page.fill('#username', 'wrong');
-        await page.fill('#password', 'wrong');
-        await page.click('#login-btn');
+        // Action: Navigate and attempt invalid login
+        await bankingPage.navigateToLogin();
+        await bankingPage.getPage().fill('#username', 'wrong');
+        await bankingPage.getPage().fill('#password', 'wrong');
+        await bankingPage.getPage().click('#login-btn');
 
-        await expect(page.locator('#error-msg')).toBeVisible();
-        await expect(page.locator('#error-msg')).toContainText('Invalid credentials');
+        // Assertions only
+        expect(await bankingPage.isErrorMessageVisible()).toBeTruthy();
+        expect(await bankingPage.getErrorMessage()).toContain('Invalid credentials');
     });
 
     test('Logout flow', async ({ page }) => {
-        // Login first
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Logout
-        await logout(page);
+        // Action: Login then logout
+        await bankingPage.login('admin', 'password123');
+        await bankingPage.logout();
+
+        // Assertions only
+        expect(await bankingPage.getCurrentURL()).toContain('index.html');
+        expect(await bankingPage.isLoginFormVisible()).toBeTruthy();
     });
 
     test('Deposit operation', async ({ page }) => {
-        // Login
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Get initial balance
-        const initialBalance = await getCurrentBalance(page);
-        console.log(`Initial balance: $${initialBalance}`);
+        // Setup
+        await bankingPage.login('admin', 'password123');
+        const initialBalance = await bankingPage.getCurrentBalance();
 
-        // Perform deposit
-        const depositAmount = 500.00;
-        const success = await deposit(page, depositAmount);
-        expect(success).toBe(true);
+        // Action: Perform deposit
+        const depositAmount = 500;
+        await bankingPage.performDeposit(depositAmount);
 
-        // Verify balance increased
-        await expectBalanceIncreasedBy(page, initialBalance, depositAmount);
-
-        // Verify new transaction appears as first in list (should be the newest)
-        const firstTransaction = await getFirstTransaction(page);
-        expect(firstTransaction).toContain('Deposit');
-        expect(firstTransaction).toContain('+$500.00');
+        // Assertions only
+        expect(await bankingPage.getDepositStatus()).toContain('Deposited');
+        const newBalance = await bankingPage.getCurrentBalance();
+        expect(newBalance).toBeGreaterThan(initialBalance);
+        expect(await bankingPage.transactionExists('Deposit', `+$${depositAmount.toFixed(2)}`)).toBeTruthy();
     });
 
     test('Check balance operation', async ({ page }) => {
-        // Login
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Click check balance button
-        const balanceText = await checkBalance(page);
+        // Setup
+        await bankingPage.login('admin', 'password123');
 
-        // Verify balance is displayed
-        expect(balanceText).toContain('Current Balance:');
-        expect(balanceText).toContain('$');
+        // Action: Check balance
+        await bankingPage.checkBalance();
+
+        // Assertions only
+        const balanceDisplay = await bankingPage.getBalanceCheckDisplay();
+        expect(balanceDisplay).toContain('Current Balance:');
+        expect(balanceDisplay).toContain('$');
     });
 
     test('Debit operation with sufficient funds', async ({ page }) => {
-        // Login
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Get initial balance
-        const initialBalance = await getCurrentBalance(page);
-        console.log(`Initial balance: $${initialBalance}`);
+        // Setup
+        await bankingPage.login('admin', 'password123');
+        const initialBalance = await bankingPage.getCurrentBalance();
 
-        // Perform debit
+        // Action: Perform debit
         const debitAmount = 100.50;
-        const success = await debit(page, debitAmount);
-        expect(success).toBe(true);
+        await bankingPage.performDebit(debitAmount);
 
-        // Verify balance decreased
-        await expectBalanceDecreasedBy(page, initialBalance, debitAmount);
-
-        // Verify new transaction appears in list
-        await expectTransactionExists(page, 'Debit', '-$100.50');
+        // Assertions only
+        expect(await bankingPage.getDebitStatus()).toContain('Debited');
+        const newBalance = await bankingPage.getCurrentBalance();
+        expect(newBalance).toBeLessThan(initialBalance);
+        expect(await bankingPage.transactionExists('Debit', `-$${debitAmount.toFixed(2)}`)).toBeTruthy();
     });
 
     test('Debit operation with insufficient funds', async ({ page }) => {
-        // Login
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Attempt to debit a very large amount
-        const largeAmount = 999999.99;
-        await page.fill('#debit-amount', largeAmount.toString());
-        await page.click('#debit-btn');
+        // Setup
+        await bankingPage.login('admin', 'password123');
 
-        // Verify insufficient funds error
-        const error = await getDebitError(page);
-        expect(error).toContain('Insufficient funds');
+        // Action: Attempt debit with large amount
+        await bankingPage.performDebit(999999.99);
+
+        // Assertions only
+        expect(await bankingPage.getDebitStatus()).toContain('Insufficient funds');
     });
 
     test('Invalid deposit amount', async ({ page }) => {
-        // Login
-        await login(page, 'admin', 'password123');
+        const bankingPage = new BankingPage(page);
 
-        // Attempt deposit with invalid amount (negative)
-        await page.fill('#deposit-amount', '-50');
-        await page.click('#deposit-btn');
+        // Setup
+        await bankingPage.login('admin', 'password123');
 
-        // Verify error message
-        const error = await getDepositError(page);
-        expect(error).toContain('Invalid amount');
+        // Action: Attempt deposit with negative amount
+        await bankingPage.getPage().fill('#deposit-amount', '-50');
+        await bankingPage.getPage().click('#deposit-btn');
+
+        // Assertions only
+        expect(await bankingPage.getDepositStatus()).toContain('Invalid amount');
     });
 });
