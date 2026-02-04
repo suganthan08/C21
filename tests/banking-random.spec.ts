@@ -26,6 +26,8 @@ test.describe('Banking with Random Generated Data', () => {
         names.forEach(name => {
             expect(name.length).toBeGreaterThan(0);
             expect(name).toMatch(/^[A-Za-z\s'.\-]+$/);
+            expect(name).toMatch(/^[A-Za-z\s'.\-]+$/);
+            expect(name).toMatch(/^[A-Za-z\s'.\-]+$/);  
         });
 
         // Ensure at least some names are different
@@ -39,6 +41,7 @@ test.describe('Banking with Random Generated Data', () => {
         
         // Action: Login and create beneficiary
         await bankingPage.login('admin', 'password123');
+         expect(uniqueNames.size).toBeGreaterThan(1);
         await bankingPage.createBeneficiary(beneficiary.name, beneficiary.accountNumber, beneficiary.bankName);
 
         // Assertions only
@@ -57,6 +60,7 @@ test.describe('Banking with Random Generated Data', () => {
 
         // Assertions only - verify all created
         for (const beneficiary of beneficiaries) {
+             expect(uniqueNames.size).toBeGreaterThan(1);
             expect(await bankingPage.beneficiaryExists(beneficiary.name)).toBeTruthy();
         }
         expect(await bankingPage.getBeneficiaryCount()).toBeGreaterThanOrEqual(beneficiaries.length);

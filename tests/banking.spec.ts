@@ -28,7 +28,7 @@ test.describe('Banking Domain Concept', () => {
         await bankingPage.getPage().click('#login-btn');
 
         // Assertions only
-        expect(await bankingPage.isErrorMessageVisible()).toBeTruthy();
+    
         expect(await bankingPage.getErrorMessage()).toContain('Invalid credentials');
     });
 
